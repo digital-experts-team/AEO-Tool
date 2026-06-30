@@ -24,5 +24,7 @@ jobs:
           pip install pytest pytest-asyncio -r backend/requirements.txt
 
       - name: Run Pytest Test Suite
+        env:
+          PYTHONPATH: .
         run: |
-          cd backend && python -m pytest tests/ -v
+          python -m pytest -v
