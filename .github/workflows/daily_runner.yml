@@ -1,0 +1,41 @@
+name: Automated Daily AI Citation Runner
+
+on:
+  schedule:
+    # Runs at 07:00 UTC every day
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-daily-citation-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Backend Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Write Google Service Account Credentials File (Optional Local Context)
+        if: ${{ env.GOOGLE_SERVICE_ACCOUNT_JSON != '' }}
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > backend/service_account.json
+
+      - name: Trigger /run-now Endpoint via curl
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "Triggering daily citation job at ${BACKEND_URL}/run-now..."
+          curl --fail --max-time 300 -X POST "${BACKEND_URL}/run-now" \
+            -H "Content-Type: application/json" \
+            -H "X-Cron-Secret: ${CRON_SECRET}"
