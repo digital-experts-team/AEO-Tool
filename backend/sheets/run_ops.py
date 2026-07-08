@@ -3,7 +3,7 @@ import uuid
 import json
 import logging
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from backend.sheets.sheets_client import (
     get_or_create_worksheet,
     QUERY_RUNS_TAB,
@@ -13,6 +13,8 @@ from backend.sheets.sheets_client import (
 )
 
 logger = logging.getLogger("citation_tracker")
+
+_summaries_cache = {}
 
 def _list_to_pipe(val: Any) -> str:
     """Helper to convert list or dict to a stored string representation."""
@@ -48,8 +50,8 @@ def insert_query_run(data: Dict[str, Any]) -> Optional[str]:
             return None
 
         new_id = str(uuid.uuid4())
-        created_at = data.get("created_at", datetime.now().isoformat())
-        run_date = data.get("run_date", datetime.now().strftime("%Y-%m-%d"))
+        created_at = data.get("created_at", datetime.now(timezone.utc).isoformat())
+        run_date = data.get("run_date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
 
         row = [
             new_id,
@@ -74,6 +76,56 @@ def insert_query_run(data: Dict[str, Any]) -> Optional[str]:
     except Exception as e:
         logger.error(f"Error inserting query run: {e}")
         return None
+
+def insert_query_runs_batch(data_list: List[Dict[str, Any]]) -> bool:
+    """
+    Generates UUIDs and timestamps for multiple records, converts list fields
+    to pipe-separated strings, and appends them to query_runs worksheet in one batch.
+    Returns True on success, False on error.
+    """
+    if not data_list:
+        return True
+    try:
+        sheet_id = os.getenv("GOOGLE_SHEET_ID")
+        if not sheet_id:
+            logger.error("GOOGLE_SHEET_ID env var is missing.")
+            return False
+
+        worksheet = get_or_create_worksheet(sheet_id, QUERY_RUNS_TAB, QUERY_RUNS_HEADERS)
+        if not worksheet:
+            logger.error("Failed to acquire query_runs worksheet.")
+            return False
+
+        rows_to_insert = []
+        for data in data_list:
+            new_id = str(uuid.uuid4())
+            created_at = data.get("created_at", datetime.now(timezone.utc).isoformat())
+            run_date = data.get("run_date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+
+            row = [
+                new_id,
+                str(data.get("client_id", "")),
+                str(run_date),
+                str(data.get("query", "")),
+                str(data.get("engine", "")),
+                str(data.get("raw_response", "")),
+                str(data.get("brand_mentioned", "")),
+                str(data.get("brand_sentiment", "")),
+                str(data.get("brand_description", "")),
+                str(data.get("brand_position", "")),
+                _list_to_pipe(data.get("competitors_mentioned", [])),
+                _list_to_pipe(data.get("source_urls", [])),
+                str(data.get("citation_score", "")),
+                str(data.get("reasoning", "")),
+                created_at
+            ]
+            rows_to_insert.append(row)
+
+        worksheet.append_rows(rows_to_insert)
+        return True
+    except Exception as e:
+        logger.error(f"Error batch inserting query runs: {e}")
+        return False
 
 def get_query_runs_by_date(client_id: str, date: str) -> List[Dict[str, Any]]:
     """
@@ -132,7 +184,7 @@ def get_query_runs_last_n_days(client_id: str, n: int) -> List[Dict[str, Any]]:
         records = worksheet.get_all_records()
         client_runs = []
 
-        today_date = datetime.now().date()
+        today_date = datetime.now(timezone.utc).date()
         cutoff_date = today_date - timedelta(days=n)
 
         for row in records:
@@ -191,7 +243,7 @@ def upsert_daily_summary(client_id: str, date: str, data: Dict[str, Any]) -> boo
                 break
 
         summary_id = existing_id if existing_id else str(uuid.uuid4())
-        created_at = existing_created_at if existing_created_at else data.get("created_at", datetime.now().isoformat())
+        created_at = existing_created_at if existing_created_at else data.get("created_at", datetime.now(timezone.utc).isoformat())
 
         row_values = [
             summary_id,
@@ -214,6 +266,9 @@ def upsert_daily_summary(client_id: str, date: str, data: Dict[str, Any]) -> boo
             worksheet.append_row(row_values)
             logger.info(f"Appended new daily summary row for client '{client_id}' on '{target_date_str}'.")
 
+        # Invalidate cache
+        if client_id in _summaries_cache:
+            del _summaries_cache[client_id]
         return True
     except Exception as e:
         logger.error(f"Error upserting daily summary for client '{client_id}' on '{date}': {e}")
@@ -225,6 +280,12 @@ def get_daily_summaries(client_id: str, days: int = 30) -> List[Dict[str, Any]]:
     and returns up to days count of most recent records, sorted by summary_date descending.
     On error, logs and returns [].
     """
+    global _summaries_cache
+    now = datetime.now(timezone.utc)
+    if client_id in _summaries_cache:
+        cached_time, cached_data = _summaries_cache[client_id]
+        if (now - cached_time).total_seconds() < 15:
+            return cached_data[:days] if days > 0 else cached_data
     try:
         sheet_id = os.getenv("GOOGLE_SHEET_ID")
         if not sheet_id:
@@ -243,11 +304,54 @@ def get_daily_summaries(client_id: str, days: int = 30) -> List[Dict[str, Any]]:
             if str(row.get("client_id")).strip() == str(client_id).strip():
                 sum_dict = dict(row)
                 sum_dict["not_cited_queries"] = _pipe_to_list(row.get("not_cited_queries"))
+                
+                # Parse competitor_citation_counts JSON string back to dict
+                comp_counts_str = row.get("competitor_citation_counts", "{}")
+                if isinstance(comp_counts_str, str) and comp_counts_str.strip():
+                    try:
+                        sum_dict["competitor_citation_counts"] = json.loads(comp_counts_str)
+                    except json.JSONDecodeError:
+                        sum_dict["competitor_citation_counts"] = {}
+                elif not comp_counts_str:
+                    sum_dict["competitor_citation_counts"] = {}
+                    
                 client_summaries.append(sum_dict)
 
         # Sort by summary_date descending
         client_summaries.sort(key=lambda x: str(x.get("summary_date", "")), reverse=True)
+        _summaries_cache[client_id] = (now, client_summaries)
         return client_summaries[:days] if days > 0 else client_summaries
     except Exception as e:
         logger.error(f"Error getting daily summaries for client '{client_id}': {e}")
         return []
+
+def get_query_runs(client_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    Gets all query run rows, optionally filtered by client_id.
+    This supports legacy report/router code while using the current sheet schema.
+    """
+    try:
+        sheet_id = os.getenv("GOOGLE_SHEET_ID")
+        if not sheet_id:
+            logger.error("GOOGLE_SHEET_ID env var is missing.")
+            return []
+
+        worksheet = get_or_create_worksheet(sheet_id, QUERY_RUNS_TAB, QUERY_RUNS_HEADERS)
+        if not worksheet:
+            logger.error("Failed to acquire query_runs worksheet.")
+            return []
+
+        records = worksheet.get_all_records()
+        runs = []
+        for row in records:
+            if client_id is not None and str(row.get("client_id")).strip() != str(client_id).strip():
+                continue
+            run_dict = dict(row)
+            run_dict["competitors_mentioned"] = _pipe_to_list(row.get("competitors_mentioned"))
+            run_dict["source_urls"] = _pipe_to_list(row.get("source_urls"))
+            runs.append(run_dict)
+        return runs
+    except Exception as e:
+        logger.error(f"Error getting query runs: {e}")
+        return []
+

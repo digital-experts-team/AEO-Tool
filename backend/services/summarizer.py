@@ -25,7 +25,7 @@ Queries where brand was absent: {not_cited_queries}
 Competitors cited most today: {top_competitors}
 New sources referencing the brand: {new_sources}
 
-Write 3-4 sentences: overall performance, change from yesterday, which competitors dominated, and one specific recommendation."""
+Write 3-4 sentences: overall performance, which competitors dominated, and one specific recommendation. DO NOT restate the citation rate or mention rate percentages in your summary, as they are already displayed in the UI."""
 
 async def generate_daily_summary(
     brand_name: str,
@@ -42,7 +42,7 @@ async def generate_daily_summary(
     Calls Claude model to generate a brief 3-4 sentence plain text daily citation summary.
     Returns plain text summary string, or fallback string on failure.
     """
-    fallback = f"Citation rate for {brand_name} today: {citation_rate}%. Data logged successfully."
+    fallback = f"Tracked search queries for {brand_name} executed successfully across generative engines today."
     try:
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
@@ -83,4 +83,32 @@ async def generate_daily_summary(
         return fallback
     except Exception as e:
         logger.error(f"[summarizer] Exception during generate_daily_summary: {e}")
+        return fallback
+
+async def generate_recommendations(brand_name: str, uncited_queries: List[str], top_competitors: List[str]) -> str:
+    """
+    Calls Claude to generate 3 actionable recommendations based on gap analysis.
+    """
+    fallback = "Focus on content generation for missed queries. Enhance PR efforts. Monitor competitor keyword strategy."
+    try:
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            return fallback
+
+        client = anthropic.Anthropic(api_key=api_key)
+        
+        prompt = f"Brand: {brand_name}\nQueries where brand was not cited: {uncited_queries}\nTop Competitors cited in these queries: {top_competitors}\n\nBased on this gap analysis, provide exactly 3 short, highly actionable SEO/PR recommendations to improve generative AI citation for {brand_name}. Format as a simple markdown list."
+
+        response = client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=250,
+            temperature=0.7,
+            system="You are an expert AI SEO strategist.",
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.content[0].text
+    except Exception as e:
+        logger.error(f"[summarizer] Failed to generate recommendations: {e}")
         return fallback

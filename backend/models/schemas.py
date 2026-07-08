@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 class ClientBase(BaseModel):
     name: str = Field(..., description="Name of the client brand")
@@ -14,7 +14,7 @@ class ClientCreate(ClientBase):
 
 class Client(ClientBase):
     id: str
-    created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     status: str = "active"
 
 class CitationMention(BaseModel):
@@ -40,7 +40,7 @@ class QueryResult(BaseModel):
     mentions: List[CitationMention]
     client_cited: bool
     client_rank: Optional[int] = None
-    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 class CitationScoreData(BaseModel):
     client_id: str
@@ -73,3 +73,52 @@ class DailySummaryData(BaseModel):
     score_change_24h: float
     key_takeaway: str
     alerts: List[str]
+
+class IntentGroup(BaseModel):
+    intent_type: str
+    total_queries: int
+    cited_count: int
+    citation_rate: float
+
+class PriorityGapQuery(BaseModel):
+    query_text: str
+    competitor_count: int
+    competitors: List[str]
+    times_missed: int
+    priority_rank: int
+
+class BrandOverviewResponse(BaseModel):
+    client_id: str
+    brand_name: str
+    industry: str
+    ai_visibility_score: float
+    ai_visibility_trend: str
+    brand_perception_phrases: List[str]
+    intent_breakdown: List[IntentGroup]
+    priority_gap_queries: List[PriorityGapQuery]
+    competitor_dominance: Dict[str, int]
+    sentiment_trend: List[Dict[str, Any]]
+    top_cited_sources: List[str]
+    industry_specific_insights: Dict[str, Any]
+
+class BotAccessStatus(BaseModel):
+    user_agent: str
+    display_name: str
+    status: str  # allowed | blocked | partial | not_specified
+    impact: str
+
+class TechnicalAuditResponse(BaseModel):
+    client_id: str
+    domain: str
+    ai_readiness_score: int  # 0-100 calculated from checks
+    robots_txt_exists: bool
+    bot_access: List[BotAccessStatus]
+    llms_txt_exists: bool
+    llms_txt_content: Optional[str]
+    sitemap_exists: bool
+    sitemap_page_count: Optional[int]
+    schema_types_found: List[str]
+    schema_types_missing: List[str]
+    critical_issues: List[str]  # list of high-priority problems found
+    pagespeed: Optional[Dict[str, Any]] = None  # Google PageSpeed Insights data
+

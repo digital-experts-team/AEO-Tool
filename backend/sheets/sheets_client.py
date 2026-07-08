@@ -16,7 +16,16 @@ SCOPES = [
 # Sheet Tab Constants and Headers
 CLIENTS_TAB = "clients"
 CLIENTS_HEADERS = ["id","name","brand_name","brand_aliases",
-                   "competitors","queries","is_active","created_at"]
+                   "competitors","queries","is_active","created_at",
+                   "suggested_queries","suggestions_generated_at","product_description",
+                   "domain","industry"]
+
+GSC_INTEGRATIONS_TAB = "gsc_integrations"
+GSC_INTEGRATIONS_HEADERS = [
+    "id", "client_id", "access_token", "refresh_token", 
+    "token_expiry", "site_url", "connected_at",
+    "ga4_access_token", "ga4_refresh_token", "ga4_property_id", "ga4_connected_at"
+]
 
 QUERY_RUNS_TAB = "query_runs"
 QUERY_RUNS_HEADERS = ["id","client_id","run_date","query","engine",

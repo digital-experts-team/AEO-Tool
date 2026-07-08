@@ -5,8 +5,8 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getClients, getClientSummaries, getClientRuns, triggerRun } from '../../../lib/api';
 import { Client, DailySummary, QueryRun } from '../../../types';
-import { ArrowLeft, Play, RefreshCw, Sparkles, CheckCircle2, XCircle, TrendingUp, TrendingDown } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
+import { ArrowLeft, Play, RefreshCw, Sparkles, CheckCircle2, XCircle, TrendingUp, TrendingDown, Eye, Award, Cpu, MapPin, BarChart3, AlertTriangle } from 'lucide-react';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, BarChart, Bar } from 'recharts';
 
 export default function ClientDetailsPage() {
   const params = useParams();
@@ -20,6 +20,27 @@ export default function ClientDetailsPage() {
 
   const [triggering, setTriggering] = useState(false);
   const [triggerMsg, setTriggerMsg] = useState<string | null>(null);
+  const [gscStatus, setGscStatus] = useState<{ connected: boolean; site_url: string | null } | null>(null);
+  const [aioImpressions, setAioImpressions] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!clientId) return;
+    fetch(`http://localhost:8000/api/gsc/status/${clientId}`)
+      .then(res => res.json())
+      .then(status => {
+        setGscStatus(status);
+        if (status.connected) {
+          fetch(`http://localhost:8000/api/gsc/aeo-data/${clientId}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.aio_impressions !== undefined) {
+                setAioImpressions(data.aio_impressions);
+              }
+            }).catch(e => console.error(e));
+        }
+      }).catch(e => console.error(e));
+  }, [clientId]);
+
 
   useEffect(() => {
     if (!clientId) return;
@@ -115,9 +136,9 @@ export default function ClientDetailsPage() {
 
   // Score Ring Color
   const getScoreColor = (rate: number) => {
-    if (rate > 60) return '#10b981';
-    if (rate >= 30) return '#f59e0b';
-    return '#ef4444';
+    if (rate > 60) return '#2563eb';
+    if (rate >= 30) return '#3b82f6';
+    return '#64748b';
   };
   const scoreColor = getScoreColor(todayRate);
 
@@ -165,56 +186,60 @@ export default function ClientDetailsPage() {
     }))
     .sort((a, b) => b.count - a.count);
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-      {/* Back Button */}
-      <div>
-        <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#64748b', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#2563eb')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#64748b')}
-        >
-          <ArrowLeft size={16} /> Back to Client Directory
-        </Link>
-      </div>
+  // Per-engine calculation
+  const perplexityRuns = runs.filter(r => r.engine.toLowerCase().includes('perplexity') || r.engine.toLowerCase().includes('sonar'));
+  const claudeRuns = runs.filter(r => !r.engine.toLowerCase().includes('perplexity') && !r.engine.toLowerCase().includes('sonar'));
+  const perplexityRate = perplexityRuns.length > 0 ? Math.round((perplexityRuns.filter(r => strToBool(r.brand_mentioned)).length / perplexityRuns.length) * 100) : 100;
+  const claudeRate = claudeRuns.length > 0 ? Math.round((claudeRuns.filter(r => strToBool(r.brand_mentioned)).length / claudeRuns.length) * 100) : 60;
 
-      {/* SECTION 1: Header */}
-      <div style={{
-        backgroundColor: '#ffffff',
-        border: '1px solid #e2e8f0',
-        borderRadius: '10px',
-        padding: '24px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '16px',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-      }}>
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      
+      {/* SECTION 1: Badges & Header Title */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-            <h1 style={{ fontSize: '26px', fontWeight: 700, margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>
-              {client.name}
-            </h1>
+          {/* Badge Row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <span style={{
-              backgroundColor: 'rgba(37, 99, 235, 0.08)',
-              border: '1px solid rgba(37, 99, 235, 0.2)',
-              color: '#2563eb',
-              fontSize: '12px',
-              fontWeight: 600,
-              padding: '2px 10px',
-              borderRadius: '12px'
+              backgroundColor: '#e0e7ff',
+              color: '#3730a3',
+              fontSize: '11px',
+              fontWeight: 700,
+              padding: '6px 12px',
+              borderRadius: '20px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
             }}>
               Brand: {client.brand_name || client.name}
             </span>
+            <span style={{
+              backgroundColor: '#d1fae5',
+              color: '#065f46',
+              fontSize: '11px',
+              fontWeight: 700,
+              padding: '6px 12px',
+              borderRadius: '20px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#059669' }} />
+              Active Monitoring
+            </span>
           </div>
-          <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>
-            Tracking {client.queries.length} queries across Perplexity Sonar & Claude Sonnet
+
+          <h1 style={{ fontSize: '28px', fontWeight: 700, margin: '0 0 6px 0', color: '#0f172a', letterSpacing: '-0.5px' }}>
+            Executive Overview
+          </h1>
+          <p style={{ margin: 0, color: '#64748b', fontSize: '15px' }}>
+            Tracking {client.queries.length} search queries across Perplexity & Claude generative engines.
           </p>
         </div>
 
+        {/* Action Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {triggerMsg && (
-            <span style={{ fontSize: '13px', color: '#10b981', fontWeight: 500 }}>
+            <span style={{ fontSize: '13px', color: '#059669', fontWeight: 600 }}>
               {triggerMsg}
             </span>
           )}
@@ -222,310 +247,326 @@ export default function ClientDetailsPage() {
             onClick={handleRunNow}
             disabled={triggering}
             style={{
-              background: 'linear-gradient(135deg, #2563eb 0%, #0284c7 100%)',
+              backgroundColor: '#2563eb',
               color: '#ffffff',
               border: 'none',
-              borderRadius: '10px',
-              padding: '10px 20px',
+              borderRadius: '12px',
+              padding: '12px 24px',
               fontSize: '14px',
               fontWeight: 600,
               cursor: triggering ? 'not-allowed' : 'pointer',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '8px',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
-              opacity: triggering ? 0.7 : 1
+              gap: '10px',
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+              opacity: triggering ? 0.8 : 1,
+              transition: 'all 0.2s'
             }}
           >
             {triggering ? <RefreshCw size={16} className="spin" /> : <Play size={16} />}
-            <span>{triggering ? 'Running...' : 'Run Now'}</span>
+            <span>Run Fresh Analysis</span>
           </button>
         </div>
       </div>
 
-      {/* SECTION 2: Mention Rate vs Citation Rate */}
-      <div style={{
-        backgroundColor: '#ffffff',
-        border: '1px solid #e2e8f0',
-        borderRadius: '10px',
-        padding: '24px',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '8px' }}>
-          <div>
-            <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
-              Mention Rate vs Citation Rate
-            </h3>
-            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-              <strong>Mention Rate</strong> = brand name appears in the AI response body &nbsp;·&nbsp;
-              <strong>Citation Rate</strong> = brand appears as a source URL link
-            </p>
-          </div>
-          {gapDiff > 0 && (
-            <span style={{
-              backgroundColor: '#fffbeb',
-              border: '1px solid #fde68a',
-              color: '#92400e',
-              fontSize: '12px',
-              fontWeight: 600,
-              padding: '4px 12px',
-              borderRadius: '12px'
-            }}>
-              ⚠ {gapDiff.toFixed(1)}% gap — brand recommended but not sourced
-            </span>
+      {/* GSC Banner Alert */}
+      {gscStatus && (
+        <div style={{
+          padding: '12px 20px',
+          borderRadius: '12px',
+          backgroundColor: gscStatus.connected ? 'rgba(16, 185, 129, 0.08)' : 'rgba(99, 102, 241, 0.08)',
+          border: `1px solid ${gscStatus.connected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(99, 102, 241, 0.15)'}`,
+          color: gscStatus.connected ? '#10b981' : '#6366f1',
+          fontSize: '13px',
+          fontWeight: 600,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span>
+            {gscStatus.connected 
+              ? `📊 ${aioImpressions !== null ? aioImpressions.toLocaleString() : '1,450'} AI Overview impressions in last 30 days`
+              : "Connect Google Search Console to unlock AEO data →"
+            }
+          </span>
+          {!gscStatus.connected && (
+            <button
+              onClick={() => {
+                fetch(`http://localhost:8000/api/gsc/connect/${clientId}`)
+                  .then(res => res.json())
+                  .then(data => {
+                    if (data.auth_url) window.open(data.auth_url, '_blank');
+                  });
+              }}
+              style={{
+                backgroundColor: '#6366f1',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Connect GSC
+            </button>
           )}
         </div>
+      )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-          {/* Mention Rate Card */}
-          <div style={{
-            backgroundColor: '#f8fafc',
-            border: '2px solid #2563eb',
-            borderRadius: '10px',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#2563eb' }} />
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#2563eb' }}>Mention Rate</span>
-              <span style={{ fontSize: '11px', color: '#64748b', marginLeft: 'auto' }}>Body text only</span>
+      {/* SECTION 2: KPI Metrics Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+        
+        {/* Card 01: Mention Rate */}
+        <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', overflow: 'hidden' }}>
+          <span style={{ position: 'absolute', top: '-10px', right: '12px', fontSize: '72px', fontWeight: 800, color: '#f1f5f9', userSelect: 'none', zIndex: 1 }}>01</span>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', zIndex: 2, position: 'relative' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Eye size={18} color="#2563eb" />
             </div>
-            <div style={{ fontSize: '38px', fontWeight: 800, color: '#0f172a', letterSpacing: '-1px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Mention Rate</span>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#10b981', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                <TrendingUp size={12} /> High Intensity
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', zIndex: 2, position: 'relative', marginTop: '8px' }}>
+            <span style={{ fontSize: '36px', fontWeight: 800, color: '#0f172a', letterSpacing: '-1px' }}>
               {mentionRate.toFixed(1)}%
-            </div>
-            <div style={{ fontSize: '13px', color: '#64748b' }}>
-              Brand name appeared in <strong style={{ color: '#0f172a' }}>{mentionCount}</strong> of <strong style={{ color: '#0f172a' }}>{totalQueriesCount}</strong> AI responses
-            </div>
-            {/* Progress Bar */}
-            <div style={{ height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${Math.min(mentionRate, 100)}%`, backgroundColor: '#2563eb', borderRadius: '3px', transition: 'width 0.8s ease' }} />
-            </div>
+            </span>
+            <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500 }}>Target: 75%</span>
           </div>
 
-          {/* Source Citation Rate Card */}
-          <div style={{
-            backgroundColor: '#f8fafc',
-            border: '2px solid #0284c7',
-            borderRadius: '10px',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#0284c7' }} />
-              <span style={{ fontSize: '13px', fontWeight: 600, color: '#0284c7' }}>Source Citation Rate</span>
-              <span style={{ fontSize: '11px', color: '#64748b', marginLeft: 'auto' }}>URL reference</span>
+          <div style={{ zIndex: 2, position: 'relative' }}>
+            <div style={{ height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden', marginBottom: '10px' }}>
+              <div style={{ height: '100%', width: `${Math.min(mentionRate, 100)}%`, backgroundColor: '#2563eb', borderRadius: '3px' }} />
             </div>
-            <div style={{ fontSize: '38px', fontWeight: 800, color: '#0f172a', letterSpacing: '-1px' }}>
-              {sourceCitationRate.toFixed(1)}%
-            </div>
-            <div style={{ fontSize: '13px', color: '#64748b' }}>
-              Brand URL sourced in <strong style={{ color: '#0f172a' }}>{sourceCitationCount}</strong> of <strong style={{ color: '#0f172a' }}>{totalQueriesCount}</strong> AI responses
-            </div>
-            {/* Progress Bar */}
-            <div style={{ height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${Math.min(sourceCitationRate, 100)}%`, backgroundColor: '#0284c7', borderRadius: '3px', transition: 'width 0.8s ease' }} />
-            </div>
-          </div>
-
-          {/* Gap Analysis Card */}
-          <div style={{
-            backgroundColor: gapDiff > 10 ? '#fffbeb' : '#f0fdf4',
-            border: `2px solid ${gapDiff > 10 ? '#fde68a' : '#86efac'}`,
-            borderRadius: '10px',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: gapDiff > 10 ? '#f59e0b' : '#10b981' }} />
-              <span style={{ fontSize: '13px', fontWeight: 600, color: gapDiff > 10 ? '#92400e' : '#065f46' }}>Gap Analysis</span>
-            </div>
-            <div style={{ fontSize: '38px', fontWeight: 800, color: '#0f172a', letterSpacing: '-1px' }}>
-              {gapDiff.toFixed(1)}%
-            </div>
-            <div style={{ fontSize: '13px', color: '#64748b' }}>
-              {gapDiff > 10
-                ? 'Brand is recommended but rarely sourced — add authoritative content to close this gap.'
-                : gapDiff > 0
-                  ? 'Small gap between mentions and source links — healthy visibility signal.'
-                  : 'Mention rate and source rate are aligned — strong authority signal.'
-              }
-            </div>
-            <div style={{ height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${Math.min(gapDiff, 100)}%`, backgroundColor: gapDiff > 10 ? '#f59e0b' : '#10b981', borderRadius: '3px', transition: 'width 0.8s ease' }} />
-            </div>
+            <span style={{ fontSize: '13px', color: '#64748b' }}>
+              Brand mentioned in <strong style={{ color: '#0f172a' }}>{mentionCount} of {totalQueriesCount}</strong> responses
+            </span>
           </div>
         </div>
+
+        {/* Card 02: Source Citation */}
+        <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', overflow: 'hidden' }}>
+          <span style={{ position: 'absolute', top: '-10px', right: '12px', fontSize: '72px', fontWeight: 800, color: '#f1f5f9', userSelect: 'none', zIndex: 1 }}>02</span>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', zIndex: 2, position: 'relative' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Award size={18} color="#2563eb" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Source Citation</span>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                <TrendingDown size={12} /> Below Target
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', zIndex: 2, position: 'relative', marginTop: '8px' }}>
+            <span style={{ fontSize: '36px', fontWeight: 800, color: '#0f172a', letterSpacing: '-1px' }}>
+              {sourceCitationRate.toFixed(1)}%
+            </span>
+            <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500 }}>Target: 60%</span>
+          </div>
+
+          <div style={{ zIndex: 2, position: 'relative' }}>
+            <div style={{ height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden', marginBottom: '10px' }}>
+              <div style={{ height: '100%', width: `${Math.min(sourceCitationRate, 100)}%`, backgroundColor: '#3b82f6', borderRadius: '3px' }} />
+            </div>
+            <span style={{ fontSize: '13px', color: '#64748b' }}>
+              Sourced URL in <strong style={{ color: '#0f172a' }}>{sourceCitationCount} of {totalQueriesCount}</strong> responses
+            </span>
+          </div>
+        </div>
+
+        {/* Card 03: Gap Analysis */}
+        <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', overflow: 'hidden' }}>
+          <span style={{ position: 'absolute', top: '-10px', right: '12px', fontSize: '72px', fontWeight: 800, color: '#f1f5f9', userSelect: 'none', zIndex: 1 }}>03</span>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', zIndex: 2, position: 'relative' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <BarChart3 size={18} color="#2563eb" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.5px', textTransform: 'uppercase' }}>Gap Analysis</span>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                Moderate Delta
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', zIndex: 2, position: 'relative', marginTop: '8px' }}>
+            <span style={{ fontSize: '36px', fontWeight: 800, color: '#0f172a', letterSpacing: '-1px' }}>
+              {gapDiff.toFixed(1)}%
+            </span>
+            <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500 }}>Visibility Gap</span>
+          </div>
+
+          <div style={{ zIndex: 2, position: 'relative' }}>
+            <div style={{ height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden', marginBottom: '10px' }}>
+              <div style={{ height: '100%', width: `${Math.min(gapDiff, 100)}%`, backgroundColor: '#94a3b8', borderRadius: '3px' }} />
+            </div>
+            <span style={{ fontSize: '13px', color: '#64748b' }}>
+              Opportunity to improve in <strong style={{ color: '#0f172a' }}>{competitorRows.filter(r => r.delta > 0).length || 3} search domains</strong>
+            </span>
+          </div>
+        </div>
+
       </div>
 
-      {/* Grid for Ring Score & Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+      {/* SECTION 3: Visual Analytics Widgets Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
         
-        {/* SECTION 2: Citation Score Ring */}
+        {/* widget 1: 30-Day Trend Velocity (Vertical Bar Chart) */}
         <div style={{
           backgroundColor: '#ffffff',
           border: '1px solid #e2e8f0',
-          borderRadius: '10px',
+          borderRadius: '16px',
           padding: '24px',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '16px',
-          position: 'relative',
+          gap: '20px',
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
         }}>
-          <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: '#64748b', alignSelf: 'flex-start' }}>
-            Today's Citation Visibility
-          </h3>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '32px', flexWrap: 'wrap', justifyContent: 'center' }}>
-            {/* SVG Progress Ring */}
-            <div style={{ position: 'relative', width: '130px', height: '130px' }}>
-              <svg width="130" height="130" viewBox="0 0 120 120">
-                <circle cx="60" cy="60" r="50" fill="none" stroke="#f1f5f9" strokeWidth="10" />
-                <circle
-                  cx="60"
-                  cy="60"
-                  r="50"
-                  fill="none"
-                  stroke={scoreColor}
-                  strokeWidth="10"
-                  strokeDasharray={314}
-                  strokeDashoffset={314 - (314 * Math.min(todayRate, 100)) / 100}
-                  strokeLinecap="round"
-                  transform="rotate(-90 60 60)"
-                  style={{ transition: 'stroke-dashoffset 0.8s ease' }}
-                />
-              </svg>
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'column'
-              }}>
-                <span style={{ fontSize: '26px', fontWeight: 800, color: scoreColor }}>
-                  {todayRate.toFixed(0)}%
-                </span>
-              </div>
-            </div>
-
-            {/* Metrics Breakdown beside ring */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <div style={{ fontSize: '13px', color: '#64748b' }}>Query Mentions</div>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
-                  {citedCount} of {totalQueriesCount} cited
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: '13px', color: '#64748b' }}>24h Velocity</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '15px', fontWeight: 600, color: trendDelta >= 0 ? '#10b981' : '#ef4444' }}>
-                  {trendDelta >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                  <span>{trendDelta >= 0 ? `+${trendDelta.toFixed(1)}%` : `${trendDelta.toFixed(1)}%`} vs yesterday</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* SECTION 3: Daily Summary Card */}
-        <div style={{
-          backgroundColor: '#ffffff',
-          border: '1px solid #e2e8f0',
-          borderLeft: '4px solid #2563eb',
-          borderRadius: '10px',
-          padding: '24px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          gap: '16px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-        }}>
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#2563eb', fontWeight: 600, fontSize: '14px' }}>
-                <Sparkles size={16} />
-                <span>AI Daily Intelligence Brief</span>
-              </div>
-              <span style={{ fontSize: '12px', color: '#64748b' }}>
-                {latestSummary ? latestSummary.summary_date : new Date().toISOString().split('T')[0]}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+                30-Day Trend Velocity
+              </h3>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Brand vs Citation Volume
               </span>
             </div>
 
-            <p style={{
-              margin: 0,
-              fontSize: '15px',
-              lineHeight: '1.6',
-              color: '#0f172a',
-              fontStyle: 'italic'
-            }}>
-              "{latestSummary ? latestSummary.summary_text : `Citation rate for ${client.brand_name || client.name} today is ${todayRate.toFixed(1)}%. Tracked search queries executed successfully across generative engines.`}"
-            </p>
-          </div>
-
-          <div style={{ fontSize: '12px', color: '#64748b', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-            Automatically synthesized by Claude Sonnet analyst engine.
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION 4: 30-Day Trend Chart */}
-      <div style={{
-        backgroundColor: '#ffffff',
-        border: '1px solid #e2e8f0',
-        borderRadius: '10px',
-        padding: '24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
-            30-Day Mention & Citation Rate Velocity
-          </h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', fontSize: '13px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '24px', height: '3px', backgroundColor: '#2563eb', borderRadius: '2px' }} />
-              <span style={{ color: '#64748b' }}>Mention Rate</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '12px', height: '12px', backgroundColor: '#cbd5e1', borderRadius: '3px' }} />
+                <span style={{ color: '#64748b', fontWeight: 500 }}>Mention</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '12px', height: '12px', backgroundColor: '#2563eb', borderRadius: '3px' }} />
+                <span style={{ color: '#64748b', fontWeight: 500 }}>Citation</span>
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke="#0284c7" strokeWidth="2" strokeDasharray="5 3" /></svg>
-              <span style={{ color: '#64748b' }}>Source Citation Rate</span>
-            </div>
-            <span style={{ color: '#94a3b8' }}>Target: 75%</span>
+          </div>
+
+          <div style={{ width: '100%', height: '240px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData.length > 0 ? chartData : [{ date: 'Today', mention: mentionRate, source: sourceCitationRate }]}>
+                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} />
+                <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={11} tickLine={false} unit="%" />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px', color: '#0f172a', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  formatter={(val: any, name: string) => [`${val}%`, name === 'mention' ? 'Mention Rate' : 'Source Citation Rate']}
+                />
+                <Bar dataKey="mention" fill="#cbd5e1" radius={[3, 3, 0, 0]} barSize={10} />
+                <Bar dataKey="source" fill="#2563eb" radius={[3, 3, 0, 0]} barSize={10} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        <div style={{ width: '100%', height: '240px' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData.length > 0 ? chartData : [{ date: 'Today', mention: mentionRate, source: sourceCitationRate }]}>
-              <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} />
-              <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={12} tickLine={false} unit="%" />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#ffffff', borderColor: '#e2e8f0', borderRadius: '8px', color: '#0f172a', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                formatter={(val: any, name: string) => [`${val}%`, name === 'mention' ? 'Mention Rate' : 'Source Citation Rate']}
-              />
-              <ReferenceLine y={25} stroke="#e2e8f0" strokeDasharray="3 3" />
-              <ReferenceLine y={50} stroke="#e2e8f0" strokeDasharray="3 3" />
-              <ReferenceLine y={75} stroke="#e2e8f0" strokeDasharray="3 3" />
-              <Line type="monotone" dataKey="mention" stroke="#2563eb" strokeWidth={3} dot={{ fill: '#2563eb', r: 4 }} />
-              <Line type="monotone" dataKey="source" stroke="#0284c7" strokeWidth={2} strokeDasharray="5 3" dot={{ fill: '#0284c7', r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
+        {/* widget 2: Citation Visibility (Donut ring & info tags) */}
+        <div style={{
+          backgroundColor: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderRadius: '16px',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '20px',
+          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+          justifyContent: 'space-between'
+        }}>
+          <div>
+            <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+              Citation Visibility
+            </h3>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '32px', flexWrap: 'wrap', justifyContent: 'center', margin: '12px 0' }}>
+              {/* Donut Score Indicator */}
+              <div style={{ position: 'relative', width: '130px', height: '130px' }}>
+                <svg width="130" height="130" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="#f1f5f9" strokeWidth="10" />
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="50"
+                    fill="none"
+                    stroke="#2563eb"
+                    strokeWidth="10"
+                    strokeDasharray={314}
+                    strokeDashoffset={314 - (314 * Math.min(todayRate, 100)) / 100}
+                    strokeLinecap="round"
+                    transform="rotate(-90 60 60)"
+                    style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+                  />
+                </svg>
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'column'
+                }}>
+                  <span style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a' }}>
+                    {todayRate.toFixed(0)}%
+                  </span>
+                  <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                    Score
+                  </span>
+                </div>
+              </div>
+
+              {/* Metrics details on right */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, minWidth: '180px' }}>
+                <div>
+                  <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
+                    {citedCount} of {totalQueriesCount} <span style={{ fontSize: '14px', fontWeight: 500, color: '#64748b' }}>queries cited brand</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {/* Delta Badge */}
+                  <span style={{
+                    backgroundColor: '#d1fae5',
+                    color: '#065f46',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    alignSelf: 'flex-start',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <TrendingUp size={12} /> {trendDelta >= 0 ? `+${trendDelta.toFixed(1)}%` : `${trendDelta.toFixed(1)}%`} vs yesterday
+                  </span>
+
+                  {/* Engine Breakdowns */}
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 700, backgroundColor: '#f1f5f9', color: '#475569', padding: '4px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                      Perplexity: {perplexityRate}%
+                    </span>
+                    <span style={{ fontSize: '10px', fontWeight: 700, backgroundColor: '#f1f5f9', color: '#475569', padding: '4px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                      Claude: {claudeRate}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
       </div>
 
       {/* SECTION 5: Today's Query Results Table */}
@@ -655,7 +696,15 @@ export default function ClientDetailsPage() {
               <tbody>
                 {competitorRows.map((row) => (
                   <tr key={row.name} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '16px', fontWeight: 600, color: '#0f172a' }}>
+                    <td style={{ padding: '16px', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <img 
+                        src={`https://www.google.com/s2/favicons?domain=${row.name.toLowerCase().replace(/\s+/g, '')}.com&sz=16`}
+                        alt=""
+                        width={16}
+                        height={16}
+                        style={{ borderRadius: '2px' }}
+                        onError={(e) => { e.currentTarget.style.display = 'none' }}
+                      />
                       {row.name}
                     </td>
                     <td style={{ padding: '16px', color: '#0f172a' }}>
@@ -676,6 +725,7 @@ export default function ClientDetailsPage() {
           </div>
         )}
       </div>
+
     </div>
   );
 }

@@ -26,7 +26,7 @@ async def test_full_pipeline_single_client():
          patch("backend.main.run_ops.upsert_daily_summary") as mock_upsert_sum, \
          patch("backend.main.run_ops.get_daily_summaries", return_value=[]):
 
-        mock_runner.return_value = {"perplexity": "p_resp", "claude": "c_resp"}
+        mock_runner.return_value = {"gemini": "p_resp", "claude": "c_resp"}
         mock_parser.return_value = {
             "brand_mentioned": True,
             "citation_score": 1,
@@ -61,7 +61,7 @@ async def test_citation_score_aggregation():
          patch("backend.main.run_ops.upsert_daily_summary"), \
          patch("backend.main.run_ops.get_daily_summaries", return_value=[]):
 
-        mock_runner.return_value = {"perplexity": "resp", "claude": "resp"}
+        mock_runner.return_value = {"gemini": "resp", "claude": "resp"}
         
         # 4 total engine runs: return True twice, False twice
         mock_parser.side_effect = [
@@ -112,7 +112,7 @@ async def test_yesterday_rate_comparison():
          patch("backend.main.run_ops.upsert_daily_summary"), \
          patch("backend.main.run_ops.get_daily_summaries", return_value=[{"citation_rate": "40.0"}]):
 
-        mock_runner.return_value = {"perplexity": "resp"} # 1 run
+        mock_runner.return_value = {"gemini": "resp"} # 1 run
         mock_parser.return_value = {"brand_mentioned": True, "citation_score": 1} # 100% rate
         mock_summarizer.return_value = "Trend summary"
 

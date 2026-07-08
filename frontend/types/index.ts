@@ -124,3 +124,6 @@ export interface DashboardOverview {
     score: CitationScoreData;
   }[];
 }
+
+export * from './brandOverview';
+
