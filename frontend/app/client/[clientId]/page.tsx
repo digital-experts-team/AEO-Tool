@@ -82,7 +82,7 @@ export default function ClientDetailsPage() {
     try {
       setTriggering(true);
       setTriggerMsg(null);
-      await triggerRun(secret);
+      await triggerRun();
       setTriggerMsg('Daily run triggered successfully! Results will update shortly.');
       setTimeout(() => setTriggerMsg(null), 6000);
     } catch (err: any) {

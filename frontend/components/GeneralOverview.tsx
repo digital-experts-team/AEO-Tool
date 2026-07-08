@@ -312,7 +312,7 @@ export default function GeneralOverview({ data }: GeneralOverviewProps) {
               borderRadius: '12px'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ px: '8px', py: '2px', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', backgroundColor: '#a7f3d0', color: '#065f46', borderRadius: '4px', padding: '2px 6px' }}>DOMINANT 88%</span>
+                <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', backgroundColor: '#a7f3d0', color: '#065f46', borderRadius: '4px', padding: '2px 6px' }}>DOMINANT 88%</span>
                 <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Top Sentiment</span>
               </div>
               <p style={{ fontSize: '14px', fontWeight: 500, fontStyle: 'italic', color: '#1e293b', margin: 0 }}>

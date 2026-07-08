@@ -24,7 +24,7 @@ interface AeoData {
 interface TrafficSourceData {
   total_ai_sessions: number;
   by_source: Record<string, number>;
-  daily_trend: { date: string; sessions: int }[];
+  daily_trend: { date: string; sessions: number }[];
   top_source: string;
 }
 
