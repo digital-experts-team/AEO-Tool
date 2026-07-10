@@ -43,21 +43,24 @@ async function getSheetsClient() {
 export async function getClients(): Promise<Client[]> {
   const client = await getSheetsClient();
   if (!client) {
-    // Return mock data for testing
     return [
       {
-        id: 'c1a2b3d4-0001-0001-0001-000000000001',
-        name: 'Notion',
-        brand_name: 'Notion',
-        brand_aliases: ['Notion', 'Notion AI'],
-        competitors: ['Obsidian', 'Evernote', 'Confluence', 'Coda', 'Roam Research'],
+        id: 'mock-surya-0001',
+        name: 'Surya Digital Solutions (Mock Data)',
+        brand_name: 'Surya Digital Solutions',
+        brand_aliases: ['Surya Digital', 'Surya Digital Marketing', 'Surya IT Services'],
+        competitors: ['Leadraft Media Solutions', 'Other Local SEO Agencies'],
         queries: [
-          'best note taking app for teams',
-          'notion vs obsidian'
+          'What are the best SEO service providers to improve search rankings for online fashion stores?',
+          'Which companies can help optimize Google Ads campaigns for e-commerce conversion and ROI?',
+          'Which agencies offer Google Ads and local PPC services for healthcare businesses in India?',
+          'Can you recommend agencies that specialize in social media and content marketing for fashion e-commerce?',
+          'What are the best local SEO companies that can help my dental clinics rank higher in Vizag search results?'
         ],
         is_active: true,
-        created_at: '2026-06-29T00:00:00',
-        is_mock: true
+        created_at: new Date().toISOString(),
+        is_mock: true,
+        industry: 'Healthcare & Local Services (Dental)',
       }
     ];
   }
