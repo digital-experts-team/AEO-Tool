@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Anthropic from '@anthropic-ai/sdk';
 import { Client } from '../types';
+import { saveRunResult } from './sheets';
 
 const SYSTEM_PROMPT = "Answer the question directly and comprehensively. Include specific product names, companies, or services when relevant.";
 
@@ -87,6 +88,65 @@ Return valid JSON with exactly these keys: "brand_mentioned" (boolean), "brand_s
 
 export async function processClient(client: Client) {
   console.log(`Processing client: ${client.brand_name}`);
-  // In a full implementation, iterate over client.queries, run AI queries, parse them, and save to sheets
-  return { status: "success", client_id: client.id };
+  
+  if (!client.queries || client.queries.length === 0) {
+    return { status: "success", client_id: client.id, message: "No queries to process." };
+  }
+
+  const results = [];
+  let totalScore = 0;
+  let mentions = 0;
+
+  for (const query of client.queries) {
+    console.log(`Running query: ${query}`);
+    // 1. Run the query against Gemini
+    const rawResponse = await queryGemini(query);
+    
+    if (!rawResponse) {
+      console.error(`Failed to get response for query: ${query}`);
+      continue;
+    }
+
+    // 2. Parse the citation from the raw response
+    const parsed = await parseCitation(
+      rawResponse,
+      client.brand_name,
+      client.brand_aliases || [],
+      client.competitors || [],
+      query,
+      'Gemini'
+    );
+
+    // 3. Save the result to Google Sheets
+    const runData = {
+      id: `run_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      client_id: client.id,
+      query: query,
+      engine: 'Gemini',
+      raw_response: rawResponse,
+      brand_mentioned: parsed.brand_mentioned || false,
+      brand_sentiment: parsed.brand_sentiment || 'neutral',
+      competitors_mentioned: parsed.competitors_mentioned || [],
+      citation_score: parsed.citation_score || 0,
+      run_date: new Date().toISOString()
+    };
+
+    const saved = await saveRunResult(runData);
+    
+    if (saved) {
+      results.push(runData);
+      totalScore += runData.citation_score;
+      if (runData.brand_mentioned) mentions++;
+    }
+  }
+
+  const avgScore = results.length > 0 ? totalScore / results.length : 0;
+  
+  return { 
+    status: "success", 
+    client_id: client.id, 
+    queries_run: results.length,
+    mentions: mentions,
+    average_score: avgScore
+  };
 }

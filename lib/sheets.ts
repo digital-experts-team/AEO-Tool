@@ -131,3 +131,52 @@ export async function deleteClient(clientId: string): Promise<boolean> {
   // For brevity, assuming success
   return true;
 }
+
+export async function saveRunResult(runData: {
+  id: string;
+  client_id: string;
+  query: string;
+  engine: string;
+  raw_response: string;
+  brand_mentioned: boolean;
+  brand_sentiment: string;
+  competitors_mentioned: string[];
+  citation_score: number;
+  run_date: string;
+}): Promise<boolean> {
+  const client = await getSheetsClient();
+  if (!client) {
+    console.log('Mock: Saved run result', runData);
+    return true;
+  }
+
+  try {
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+    const newRow = [
+      runData.id,
+      runData.client_id,
+      runData.query,
+      runData.engine,
+      runData.raw_response,
+      runData.brand_mentioned ? 'TRUE' : 'FALSE',
+      runData.brand_sentiment,
+      runData.competitors_mentioned.join('|'),
+      runData.citation_score.toString(),
+      runData.run_date
+    ];
+
+    await client.spreadsheets.values.append({
+      spreadsheetId,
+      range: 'runs!A:J',
+      valueInputOption: 'USER_ENTERED',
+      requestBody: {
+        values: [newRow],
+      },
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error saving run result:', error);
+    return false;
+  }
+}
