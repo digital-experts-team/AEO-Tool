@@ -77,7 +77,7 @@ export default function PromptsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%' }}>
-      <ClientTopBar isMock={client?.is_mock}={client.brand_name || client.name}
+      <ClientTopBar isMock={client?.is_mock} clientName={client.brand_name || client.name}
         pageTitle={`${client.brand_name || client.name} — Prompt Explorer`}
       />
 

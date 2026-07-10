@@ -67,7 +67,7 @@ export default function BrandOverviewPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <ClientTopBar isMock={client?.is_mock}={client?.brand_name || client?.name || ''} 
+      <ClientTopBar isMock={client?.is_mock} clientName={client?.brand_name || client?.name || ''} 
         pageTitle="Brand Overview" 
       />
       {brandOverview && <GeneralOverview data={brandOverview} />}

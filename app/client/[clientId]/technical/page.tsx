@@ -30,7 +30,7 @@ export default function TechnicalPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <ClientTopBar isMock={client?.is_mock}={client?.brand_name || client?.name || ''} 
+      <ClientTopBar isMock={client?.is_mock} clientName={client?.brand_name || client?.name || ''} 
         pageTitle="Technical AI Audit & GSC Integration" 
       />
       <GSCConnect clientId={clientId} />
