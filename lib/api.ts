@@ -7,25 +7,21 @@ const BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 // ==========================================
 const DEMO_CLIENTS: Client[] = [
   {
-    id: 'c1a2b3d4-0001-0001-0001-000000000001',
-    name: 'Notion',
-    brand_name: 'Notion',
-    brand_aliases: ['Notion', 'Notion AI'],
-    competitors: ['Obsidian', 'Evernote', 'Confluence', 'Coda', 'Roam Research'],
+    id: 'mock-surya-0001',
+    name: 'Surya Digital Solutions',
+    brand_name: 'Surya Digital Solutions',
+    brand_aliases: ['Surya Digital', 'Surya Digital Marketing', 'Surya IT Services'],
+    competitors: ['Leadraft Media Solutions', 'Other Local SEO Agencies'],
     queries: [
-      'best note taking app for teams',
-      'best productivity tool for startups',
-      'notion vs obsidian',
-      'best tool for knowledge management',
-      'best wiki for remote teams',
-      'note taking app comparison 2025',
-      'best workspace for documentation',
-      'team collaboration software',
-      'best personal knowledge base tool',
-      'all in one workspace app'
+      'What are the best SEO service providers to improve search rankings for online fashion stores?',
+      'Which companies can help optimize Google Ads campaigns for e-commerce conversion and ROI?',
+      'Which agencies offer Google Ads and local PPC services for healthcare businesses in India?',
+      'Can you recommend agencies that specialize in social media and content marketing for fashion e-commerce?',
+      'What are the best local SEO companies that can help my dental clinics rank higher in Vizag search results?'
     ],
     is_active: true,
-    created_at: '2026-06-29T00:00:00'
+    created_at: '2026-06-29T00:00:00',
+    industry: 'Healthcare & Local Services (Dental)',
   },
   {
     id: 'c2b3d4e5-0002-0002-0002-000000000002',
@@ -323,15 +319,15 @@ export async function getOrganicRankings(clientId: string): Promise<any> {
 
 function _demoAIOverview(clientId: string) {
   const queries = [
-    'best note taking app for teams', 'best productivity tool for startups',
-    'notion vs obsidian', 'best tool for knowledge management',
-    'best wiki for remote teams', 'note taking app comparison 2025',
-    'best workspace for documentation', 'team collaboration software',
-    'best personal knowledge base tool', 'all in one workspace app'
+    'What are the best SEO service providers to improve search rankings for online fashion stores?',
+    'Which companies can help optimize Google Ads campaigns for e-commerce conversion and ROI?',
+    'Which agencies offer Google Ads and local PPC services for healthcare businesses in India?',
+    'Can you recommend agencies that specialize in social media and content marketing for fashion e-commerce?',
+    'What are the best local SEO companies that can help my dental clinics rank higher in Vizag search results?'
   ];
   return {
     client_id: clientId,
-    brand_name: 'Brand',
+    brand_name: 'Surya Digital Solutions',
     results: queries.map((q, i) => ({
       query: q,
       ai_overview_present: i % 4 !== 3,
@@ -345,15 +341,15 @@ function _demoAIOverview(clientId: string) {
 
 function _demoOrganicRankings(clientId: string) {
   const queries = [
-    'best note taking app for teams', 'best productivity tool for startups',
-    'notion vs obsidian', 'best tool for knowledge management',
-    'best wiki for remote teams', 'note taking app comparison 2025',
-    'best workspace for documentation', 'team collaboration software',
-    'best personal knowledge base tool', 'all in one workspace app'
+    'What are the best SEO service providers to improve search rankings for online fashion stores?',
+    'Which companies can help optimize Google Ads campaigns for e-commerce conversion and ROI?',
+    'Which agencies offer Google Ads and local PPC services for healthcare businesses in India?',
+    'Can you recommend agencies that specialize in social media and content marketing for fashion e-commerce?',
+    'What are the best local SEO companies that can help my dental clinics rank higher in Vizag search results?'
   ];
   return {
     client_id: clientId,
-    brand_name: 'Brand',
+    brand_name: 'Surya Digital Solutions',
     results: queries.map((q, i) => ({
       query: q,
       brand_organic_rank: i < 7 ? Math.floor(Math.random() * 15) + 1 : null,
