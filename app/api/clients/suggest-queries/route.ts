@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `You are an expert AI SEO strategist and Prompt Engineer. 
 I need you to generate the most critical search prompts a potential buyer would type into an AI search engine (like ChatGPT or Perplexity) when researching solutions in this specific space.

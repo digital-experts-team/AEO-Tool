@@ -13,7 +13,7 @@ export async function queryGemini(query: string): Promise<string | null> {
       return null;
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent(`${SYSTEM_PROMPT}\n\n${query}`);
     return result.response.text();
   } catch (error) {
@@ -57,7 +57,7 @@ export async function parseCitation(
     if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const prompt = `Analyze this AI-generated response for brand citation data.
 Brand: ${brandName}
