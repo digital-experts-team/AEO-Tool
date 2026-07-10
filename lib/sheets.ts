@@ -98,7 +98,11 @@ export async function createClient(data: any): Promise<Client | null> {
       (data.queries || []).join('|'),
       'True', // is_active
       new Date().toISOString(), // created_at
-      '', '', '', '', ''
+      '', // suggested_queries
+      '', // suggestions_generated_at
+      '', // product_description
+      data.domain || '', // domain
+      data.industry || '' // industry
     ];
 
     await client.spreadsheets.values.append({
