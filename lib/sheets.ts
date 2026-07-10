@@ -66,7 +66,7 @@ export async function getClients(): Promise<Client[]> {
       brand_aliases: row[3] ? row[3].split('|') : [],
       competitors: row[4] ? row[4].split('|') : [],
       queries: row[5] ? row[5].split('|') : [],
-      is_active: row[6] === 'True' || row[6] === 'true',
+      is_active: String(row[6]).toLowerCase() === 'true',
       created_at: row[7],
       suggested_queries: row[8],
       suggestions_generated_at: row[9],
