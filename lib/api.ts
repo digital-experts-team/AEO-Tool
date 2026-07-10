@@ -76,14 +76,12 @@ function buildDemoSummaries(clientId: string): DailySummary[] {
 // ==========================================
 
 export async function getClients(): Promise<Client[]> {
-  try {
-    const res = await fetch(`${BASE}/clients`, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-    return await res.json();
-  } catch {
-    console.warn('[api] Backend unreachable — using demo client data');
-    return DEMO_CLIENTS;
+  const res = await fetch(`${BASE}/clients`, { cache: 'no-store' });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`${res.status} ${res.statusText} - ${errorText}`);
   }
+  return await res.json();
 }
 
 export async function createClient(clientData: {

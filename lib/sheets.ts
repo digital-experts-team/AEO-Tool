@@ -43,30 +43,14 @@ async function getSheetsClient() {
 export async function getClients(): Promise<Client[]> {
   const client = await getSheetsClient();
   if (!client) {
-    return [
-      {
-        id: 'mock-surya-0001',
-        name: 'Surya Digital Solutions (Mock Data)',
-        brand_name: 'Surya Digital Solutions',
-        brand_aliases: ['Surya Digital', 'Surya Digital Marketing', 'Surya IT Services'],
-        competitors: ['Leadraft Media Solutions', 'Other Local SEO Agencies'],
-        queries: [
-          'What are the best SEO service providers to improve search rankings for online fashion stores?',
-          'Which companies can help optimize Google Ads campaigns for e-commerce conversion and ROI?',
-          'Which agencies offer Google Ads and local PPC services for healthcare businesses in India?',
-          'Can you recommend agencies that specialize in social media and content marketing for fashion e-commerce?',
-          'What are the best local SEO companies that can help my dental clinics rank higher in Vizag search results?'
-        ],
-        is_active: true,
-        created_at: new Date().toISOString(),
-        is_mock: true,
-        industry: 'Healthcare & Local Services (Dental)',
-      }
-    ];
+    throw new Error('Google Sheets client not initialized. Please check GOOGLE_SERVICE_ACCOUNT_JSON and GOOGLE_SHEET_ID.');
   }
 
   try {
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+    if (!spreadsheetId) {
+      throw new Error('GOOGLE_SHEET_ID is not defined in environment variables.');
+    }
     const response = await client.spreadsheets.values.get({
       spreadsheetId,
       range: 'clients!A2:Z',
