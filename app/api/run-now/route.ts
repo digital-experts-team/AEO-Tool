@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getClients } from '../../../lib/sheets';
 import { processClient } from '../../../lib/ai';
