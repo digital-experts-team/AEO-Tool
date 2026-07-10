@@ -10,6 +10,7 @@ export interface Client {
   domain?: string;
   industry?: string;
   keywords?: string[];
+  is_mock?: boolean;
 }
 
 export interface QueryRun {

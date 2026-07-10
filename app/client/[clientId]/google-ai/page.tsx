@@ -267,8 +267,7 @@ export default function GoogleAIVisibilityPage() {
       )}
 
       {/* TOP HEADER MENU NAVIGATION BAR */}
-      <ClientTopBar
-        clientName={brandName}
+      <ClientTopBar isMock={client?.is_mock}={brandName}
         pageTitle={`${brandName} — Google AI Visibility`}
         onRunNow={handleFetchGoogleData}
         isRunning={isFetching}

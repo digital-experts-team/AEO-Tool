@@ -56,7 +56,8 @@ export async function getClients(): Promise<Client[]> {
           'notion vs obsidian'
         ],
         is_active: true,
-        created_at: '2026-06-29T00:00:00'
+        created_at: '2026-06-29T00:00:00',
+        is_mock: true
       }
     ];
   }

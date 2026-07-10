@@ -196,6 +196,7 @@ export default function ClientSwitcher({ isCollapsed = false }: { isCollapsed?: 
                 </div>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {client.brand_name || client.name}
+                  {client.is_mock && <span style={{ color: '#eab308', marginLeft: '4px', fontSize: '10px' }}>(Mock)</span>}
                 </span>
               </Link>
               <button

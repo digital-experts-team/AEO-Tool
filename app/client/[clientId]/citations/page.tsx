@@ -105,8 +105,7 @@ export default function CitationsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <ClientTopBar
-        clientName={client.brand_name || client.name}
+      <ClientTopBar isMock={client?.is_mock}={client.brand_name || client.name}
         pageTitle={`${client.brand_name || client.name} — Citations`}
       />
 

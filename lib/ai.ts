@@ -12,7 +12,7 @@ export async function queryGemini(query: string): Promise<string | null> {
       return null;
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash" });
     const result = await model.generateContent(`${SYSTEM_PROMPT}\n\n${query}`);
     return result.response.text();
   } catch (error) {
@@ -52,28 +52,27 @@ export async function parseCitation(
 ) {
   try {
     if (!rawResponse) throw new Error("Empty raw response");
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error("Missing API Key");
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
 
-    const anthropic = new Anthropic({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash" });
+    
     const prompt = `Analyze this AI-generated response for brand citation data.
 Brand: ${brandName}
 Aliases: ${JSON.stringify(brandAliases)}
 Competitors: ${JSON.stringify(competitors)}
 Response: ${rawResponse}
 
-Return valid JSON with: brand_mentioned (bool), brand_sentiment (string), competitors_mentioned (array), citation_score (int).`;
+Return valid JSON with exactly these keys: "brand_mentioned" (boolean), "brand_sentiment" (string), "competitors_mentioned" (array of strings), "citation_score" (integer between 0 and 100). Do not include markdown code blocks.`;
 
-    const response = await anthropic.messages.create({
-      model: "claude-3-5-haiku-20241022",
-      max_tokens: 500,
-      temperature: 0,
-      messages: [{ role: "user", content: prompt }]
-    });
-
-    const text = response.content[0].type === 'text' ? response.content[0].text : "{}";
-    const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanedText);
+    const result = await model.generateContent(prompt);
+    let text = result.response.text().trim();
+    if (text.startsWith("\`\`\`")) {
+      text = text.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
+    }
+    
+    return JSON.parse(text);
   } catch (error) {
     console.error('[parseCitation] Error:', error);
     return {
@@ -81,7 +80,7 @@ Return valid JSON with: brand_mentioned (bool), brand_sentiment (string), compet
       brand_sentiment: "neutral",
       competitors_mentioned: competitors.slice(0, 2),
       citation_score: 85,
-      reasoning: "Mocked reasoning due to missing API key."
+      reasoning: "Mocked reasoning due to missing API key or parsing error."
     };
   }
 }

@@ -16,6 +16,7 @@ interface ClientTopBarProps {
   showDateRange?: boolean;
   // Custom right-side actions
   rightActions?: React.ReactNode;
+  isMock?: boolean;
 }
 
 export default function ClientTopBar({
@@ -27,7 +28,8 @@ export default function ClientTopBar({
   dateRange = 30,
   onDateRangeChange,
   showDateRange = false,
-  rightActions
+  rightActions,
+  isMock = false
 }: ClientTopBarProps) {
   // Parse sub-title if pageTitle contains a separator
   const titleParts = pageTitle.split('—');
@@ -60,8 +62,8 @@ export default function ClientTopBar({
             Brand: {clientName}
           </span>
           <span style={{
-            backgroundColor: '#d1fae5',
-            color: '#065f46',
+            backgroundColor: isMock ? '#fef08a' : '#d1fae5',
+            color: isMock ? '#854d0e' : '#065f46',
             fontSize: '11px',
             fontWeight: 700,
             padding: '6px 12px',
@@ -70,8 +72,8 @@ export default function ClientTopBar({
             alignItems: 'center',
             gap: '6px'
           }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#059669' }} />
-            Active Monitoring
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: isMock ? '#eab308' : '#059669' }} />
+            {isMock ? 'Mock Data (Setup Credentials)' : 'Active Monitoring'}
           </span>
         </div>
 
