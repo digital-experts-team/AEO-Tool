@@ -28,7 +28,9 @@ export default function DashboardPage() {
       const suggestions = await suggestQueries(
         formData.brandName.trim(),
         aliases.length > 0 ? aliases : [formData.brandName.trim()],
-        competitors
+        competitors,
+        formData.industry.trim(),
+        formData.domain.trim()
       );
       
       setFormData(prev => ({

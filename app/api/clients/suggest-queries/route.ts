@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export async function POST(request: Request) {
   try {
-    const { brand_name, brand_aliases, competitors } = await request.json();
+    const { brand_name, brand_aliases, competitors, industry, domain } = await request.json();
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -13,14 +13,24 @@ export async function POST(request: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash" });
 
-    const prompt = `You are an AI SEO strategist. Identify the most critical search prompts a potential buyer would type into an AI search engine when looking for solutions comparing: '${brand_name}'.
+    const prompt = `You are an expert AI SEO strategist and Prompt Engineer. 
+I need you to generate the most critical search prompts a potential buyer would type into an AI search engine (like ChatGPT or Perplexity) when researching solutions in this specific space.
+
+Brand Name: '${brand_name}'
+Industry/Niche: '${industry || 'General'}'
+Primary Domain: '${domain || 'Unknown'}'
 Brand Aliases: ${brand_aliases.join(', ')}
 Competitors: ${competitors.join(', ')}
 
-Generate exactly 6 distinct, realistic, high-impact search queries (2 Buying Intent, 2 Competitor Comparison, 2 Informational).
-Return only a valid JSON array of strings containing the 6 queries. Do not include markdown code blocks.
+Your task is to generate exactly 6 distinct, highly-personalized, realistic, and high-impact search queries. DO NOT output generic prompts. The prompts should reflect the actual industry and how users search for these specific types of services or products.
+Include:
+- 2 Buying Intent queries (e.g. searching for the best providers or software in this specific niche)
+- 2 Competitor Comparison queries (e.g. comparing this brand directly with the listed competitors)
+- 2 Informational/Long-tail queries (e.g. asking how to solve a specific problem in this industry using this brand's services)
+
+Return ONLY a valid JSON array of strings containing the 6 queries. Do not include markdown code blocks.
 Example output format:
 ["query 1", "query 2", "query 3", "query 4", "query 5", "query 6"]`;
 

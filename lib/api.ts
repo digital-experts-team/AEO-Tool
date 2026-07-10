@@ -117,7 +117,7 @@ export async function deleteClient(clientId: string): Promise<{ success: boolean
 }
 
 
-export async function suggestQueries(brandName: string, aliases: string[], competitors: string[]): Promise<string[]> {
+export async function suggestQueries(brandName: string, aliases: string[], competitors: string[], industry: string, domain: string): Promise<string[]> {
   const res = await fetch(`${BASE}/clients/suggest-queries`, {
     method: 'POST',
     headers: {
@@ -126,7 +126,9 @@ export async function suggestQueries(brandName: string, aliases: string[], compe
     body: JSON.stringify({
       brand_name: brandName,
       brand_aliases: aliases,
-      competitors: competitors
+      competitors: competitors,
+      industry: industry,
+      domain: domain
     })
   });
   if (!res.ok) {
